@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英文填空測驗</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4CAF50">
+  <link rel="icon" href="icons/icon-192.png">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(function() { console.log("Service Worker 註冊成功"); });
+    }
+  </script>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    input {
+      font-size: 20px;
+      padding: 10px;
+      width: 80%;
+      max-width: 300px;
+      box-sizing: border-box;
+      margin-top: 10px;
+    }
+    button {
+      font-size: 18px;
+      padding: 10px 15px;
+      margin: 6px 4px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #f5f5f5;
+    }
+    #result, #answerCompare, #previousAnswer {
+      margin-top: 20px;
+      font-size: 18px;
+      word-wrap: break-word;
+    }
+    .letter-box {
+      display: inline-block;
+      width: 22px;
+    }
+    hr {
+      margin: 30px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>英文單字填空題</h1>
+  <p id="chinese"></p>
+  <p id="question"></p>
+  <input type="text" id="answer" placeholder="請填入完整單字">
+  <br>
+  <button onclick="checkAnswer()">送出答案</button>
+  <button onclick="speakWord()">🔊 唸出單字</button>
+  <button onclick="repeatAudio()">🔁 重播</button>
+  <button onclick="nextQuestion()">➡️ 下一題</button>
+  <button onclick="redoLast()">🔙 上一題</button>
+
+  <p id="result"></p>
+  <p id="answerCompare"></p>
+
+  <hr>
+  <div id="previousAnswer">
+    <h3>⬅️ 上一題回顧</h3>
+    <p id="prevQuestion"></p>
+    <p id="prevInput"></p>
+    <p id="prevCompare"></p>
+  </div>
+
+  <script>
+    const rawData = `
+abound	豐富；充滿
+aim	目標
+affiliate	分部
+autorize	授權
+Annulment	廢除
+assignment	指定
+Accounting	會計
+account	帳戶；業務；客戶
+accessible	可接近的
+accessories	飾品
+acclaimed	廣受好評
+appliance	應用
+affirm	確認
+arose	發生
+attendance	出席
+agreement	同意；協定
+approval	贊成
+attentive	注意的
+aid	幫助
+achievement	成就
+appraisal	評價
+assessment	評估
+accuracy	準確性
+adjourn	休會；延期
+adaptable	適應力強的
+ambitious	有野心的
+asylum	收容所
+approbation	稱讚；認可
+anarchy	無政府
+articles	用品
+annuity	年金
+automated teller machine	自動提款機ATM
+avocation	副業
+alloy	合金
+appeal	呼籲
+audit	查帳
+accrue	增加
+audible	可聽見的
+affluent	富裕的
+auspicious	吉利的
+advisor	顧問
+attendant	服務員
+assistant	助理
+advocate	提倡者
+architect	建築師
+accountant	會計師
+attendee	出席者
+audience	觀眾
+astrology	占星學
+astronomy	天文學
+asteroid	小行星
+acid	酸
+alkalinity	鹼度
+aluminum	鋁
+archipelago	群島
+ammeter	電流錶
+anode	陽極
+appointment	預約；約會
+allocate	分配；分派
+applicant	申請人
+appoint	指派
+acquisition	獲得
+amplify	擴大
+asset	資產
+acquire	獲得
+assess	評估
+amendment	修正
+agenda	議程
+alternative	替代的
+announce	宣布
+articulate	善於表達的
+automaton	機器人
+applaud	鼓掌
+audition	試聽
+aerobics	有氧運動
+alleviate	減輕
+antibiotic	抗生素
+affection	感情；好感
+aspect	方面；觀點
+assumption	假設
+attempt	試圖
+alter	改變
+assurance	保證
+absurd	荒謬的
+ample	充裕的
+approximately	大約
+administrator	行政人員
+affiliation	聯繫；聯合
+antagonism	對抗；敵對
+adaptability	適應性
+aggressiveness	攻擊性；進取性
+administrative ability	行政管理能力
+autocratic leader	專制式領導
+achievement-oriented leadership	成就取向型領導
+appraisal tool	評價工具
+be absent from	缺席
+absence or mind	心不在焉
+absorb	吸收；吸引
+abundant in	富有
+by accident	意外地
+in accord with	與...一致
+with one accord	全體一致地
+in accordance with	根據
+on one's own account	為了自己的利益
+on account	帳戶
+on account of	因為
+on no account	絕不
+of ...account	有...重要性
+take...into account	把......考慮進去
+give sb. an account of	解釋
+account for	解釋
+accuse...of	控告
+be accustomed to	習慣於
+be acquainted with	精通
+act on	聽從...行事
+adapt oneself to	適應
+adjust oneself to	使自己適應
+adapt...(for)	改編
+in addition	此外
+in addition to	除了...之外
+as well as	以及
+adhere to	遵守
+abide by	遵守
+adjacent	鄰近的
+admit of	容許
+in advance	事先
+to advantage	優點
+have an advantage over	勝過
+take advantage of	利用
+agree with	同意(人)
+agree to	同意（事）
+in agreement (with)	與...一致
+ahead of	在...之前
+in all	全部
+after all	畢竟
+(not) at all	一點也不
+all at once	突然地
+above all	最重要的是
+all in all	總而言之
+all but	幾乎
+allow for	考慮到
+amount to	總計
+answer for	對...負責
+answer to	回應
+be anxious about	對...感到焦慮
+anxious for	渴望；擔憂
+apologize to sb. for sth.	為...向...道歉
+appeal to sb. for sth.	為某事向某人呼籲
+appeal to sb.	吸引
+apply to sb. for sth.	為...向...申請
+apply for	申請
+apply to	適用於
+approve of	贊成
+arise from	起因於
+arrange for sb./sth. to do sth.	安排...做
+arrive on	到達
+arrive at	到達(小地方)
+arrive in	到達(大地方)
+be ashamed of	感到羞愧
+assure sb. of sth.	向...保證
+. attach(to)	附上
+make an attempt at doing sth.	試圖做...
+attend to	照料
+attitude to	對...的態度
+attribute to	歸因於
+on the average	平均
+(be) aware of	意識到
+at the back of	在...後面
+at one's back	支持
+adjacent to	鄰接的
+at one's fingertips	目前
+ability	能力
+accordingly	因此
+actually	事實上
+adjustment	調整
+advise	建議
+agree	同意
+airline	航空公司
+amend	修正
+annoying	惱人的
+appetizer	開胃菜
+approach	接近
+argue	爭論
+assets	資產
+attach	附上
+accommodate	容納
+agreeable	令人愉快的
+aisle	走道
+annual	一年一度的
+appreciable	明顯的
+appropriate	適當的
+assign	指派
+attachment	附件
+awareness	察覺
+absolutely	絕對地
+accommodation	住宿
+adapter	適配器
+advantageous	有利的;有益的
+afford	負擔得起
+alarm	警報
+amusing	有趣的
+anticipate	預期
+appreciate	欣賞
+approve	贊成
+arrange	安排
+authority	權威
+accept	接受
+affordable	負擔得起的
+agricultural	農業的
+analysis	分析
+anxious	焦慮的
+application	申請
+approximate	大約的
+arrangement	安排
+assist	幫助
+authorize	授權
+accomplishment	成就
+admittance	進入
+advertisement	廣告
+agency	機構
+analyze	分析
+apologize	道歉
+apply	申請
+appreciative	讚賞的；感激的
+arbitrate	仲裁；公斷
+assemble	組裝
+assistance	協助
+attentively	專心地
+availability	有效
+advance	事先；前進
+announcement	宣布
+apprentice	學徒
+attract	吸引
+able	能夠
+above	在...上面
+abroad	在國外
+across	橫越;穿過
+act	行動；表演
+action	動作
+afraid	害怕的
+apartment	公寓
+appear	出現
+aunt	阿姨；姑姑
+absence	缺席
+absent	缺席的
+accident	意外
+activity	活動
+addition	此外
+address	處理；地址
+admit	承認
+advice	忠告
+affair	事件
+affect	影響
+against	反對；對抗
+ahead	向前
+aircraft	飛機
+album	專輯
+alike	相像的
+alive	活著的
+altogether	完全地
+among	在...之中
+amount	數量
+ancient	古代的
+ankle	腳踝
+ape	猿；猴
+appearance	外表
+appetite	食慾
+arrival	到達
+article	文章
+asleep	睡著的
+attend	出席
+author	作者
+available	可用的
+average	平均
+acceptable	可接受的
+accurate	精確的
+ache	疼痛
+achieve	達成
+additional	額外的
+admire	欣賞
+advanced	先進的
+advantage	優點
+adventure	冒險
+advertise	廣告
+afterward	後來
+agriculture	農業
+alley	小巷
+almond	杏仁
+alphabet	字母
+ambassador	大使
+ambition	野心
+ambulance	救護車
+anyhow	無論如何
+apart	分開地
+apron	圍裙
+armed	武裝的
+arrest	逮捕
+ash	灰燼
+aside	在...旁邊
+assume	假設
+athlete	運動員
+attitude	態度
+automatic	自動的
+automobile	汽車
+avenue	大道
+awaken	喚醒
+award	獎品
+aware	知道的
+awful	糟糕的
+awkward	尷尬的
+abandon	放棄
+absolute	絕對的
+abstract	抽象的
+academic	學術的
+accent	口音
+acceptance	接受
+access	進入
+accidental	意外的
+accompany	陪伴
+accomplish	完成
+accuse	指控
+acquaintance	認識
+adapt	適應
+addict	上癮
+adequate	足夠的
+adjust	調整
+admirable	令人欽佩的
+admiration	欽佩
+admission	承認
+adopt	採用；收養
+agent	經紀人
+aggressive	侵略的；好鬥的
+alcohol	酒精
+alert	警覺的
+allowance	零用錢
+amateur	業餘的
+ambiguous	含糊不清的
+amuse	娛樂
+ancestor	祖先
+anniversary	週年紀念日
+annoy	惹惱
+anxiety	焦慮
+apparent	明顯的
+appreciation	欣賞
+aquarium	水族館
+arch	拱門
+arise	發生
+arms	武器
+artificial	人造的
+artistic	藝術的
+ashamed	羞愧的
+aspirin	阿斯匹靈
+assembly	集會
+associate	聯想
+association	協會
+assure	保證
+athletic	運動的
+atmosphere	氣氛
+atom	原子;微粒
+atomic	原子的
+authentic	真實的
+autobiography	自傳
+autograph	親筆簽名
+await	等待
+abbreviate	縮寫
+abide	遵守
+aboriginal	原住民的
+abstraction	抽象；心不在焉
+abundance	豐富
+academy	學院
+accessory	配件
+acclaim	歡呼；稱讚
+accordance	一致;和諧
+accountable	應負責任的
+accumulate	累積
+accumulation	累積
+accusation	指控
+accustom	使習慣
+acne	粉刺
+acre	英畝
+adaptation	改編；適應
+addiction	上癮
+administer	管理
+administrate	管理;支配
+admiral	海軍上將
+adolescence	青春期
+advisory	勸告的
+aesthetic	美學的
+affectionate	深情的
+airtight	密封的
+airway	航線
+algebra	代數
+alienate	使疏遠
+align	排成直線
+allege	指控
+alligator	短吻鱷
+altitude	高度；海拔
+ambiguity	不明確；含糊曖昧
+amid	在...之中
+amidst	在...當中
+analogy	相似；類比
+analytical	分析的
+anchor	錨
+animate	使有生氣
+annoyance	惱怒
+anthem	國歌
+anticipation	期待
+antonym	反義字
+applicable	適用的
+archaeology	考古學
+archive	檔案
+arithmetic	算術
+ascend	上升
+aspire	立志
+assassinate	暗殺
+asthma	氣喘
+astray	迷途地
+astronaut	太空人
+astronomer	天文學家
+attain	達到
+auditorium	禮堂
+avert	避免
+aviation	航空
+awesome	令人敬畏的
+awhile	片刻`;
+
+    const questions = rawData.trim().split('\n').map(line => {
+      const [word, meaning] = line.split('\t');
+      return { word, meaning };
+    });
+
+    let currentQuestion = null;
+    let currentUtterance = null;
+    let lastQuestion = null;
+    let lastUserInput = '';
+    let fromRedo = false;
+
+    function getMaskedWord(word) {
+      if (word.length <= 2) return word;
+      let masked = word[0];
+      for (let i = 1; i < word.length - 1; i++) {
+        masked += ' _';
+      }
+      masked += ' ' + word[word.length - 1];
+      return masked.toUpperCase();
+    }
+
+    function nextQuestion() {
+      if (currentQuestion && !fromRedo) {
+        checkAnswer(true);
+        savePreviousResult();
+      }
+
+      fromRedo = false;
+      const randomIndex = Math.floor(Math.random() * questions.length);
+      lastQuestion = currentQuestion;
+      currentQuestion = questions[randomIndex];
+
+      showQuestion();
+    }
+
+    function redoLast() {
+      if (!lastQuestion) return;
+      fromRedo = true;
+      currentQuestion = lastQuestion;
+      document.getElementById('result').textContent = '';
+      document.getElementById('answerCompare').textContent = '';
+      document.getElementById('answer').value = '';
+      showQuestion();
+    }
+
+    function showQuestion() {
+      document.getElementById('chinese').textContent = `中文：${currentQuestion.meaning}`;
+      document.getElementById('question').textContent = `英文：${getMaskedWord(currentQuestion.word)}`;
+      document.getElementById('answer').value = '';
+      document.getElementById('answer').focus();
+      currentUtterance = null;
+    }
+
+    function savePreviousResult() {
+      document.getElementById('prevQuestion').innerHTML = `<strong>單字：</strong> ${currentQuestion.word.toUpperCase()}（${currentQuestion.meaning}）`;
+      document.getElementById('prevInput').innerHTML = `<strong>你的答案：</strong> ${lastUserInput.toUpperCase()}`;
+      document.getElementById('prevCompare').innerHTML = document.getElementById('answerCompare').innerHTML;
+    }
+
+    function checkAnswer(silent = false) {
+      const inputBox = document.getElementById('answer');
+      const userInput = inputBox.value.trim().toLowerCase();
+      lastUserInput = userInput;
+      const correct = currentQuestion.word.toLowerCase();
+      const result = document.getElementById('result');
+      const compareDisplay = document.getElementById('answerCompare');
+
+      if (userInput === correct) {
+        if (!silent) {
+          result.textContent = "✅ 正確！";
+          result.style.color = "green";
+        }
+        compareDisplay.innerHTML = `<span style="color:green">${correct.toUpperCase()}</span>`;
+      } else {
+        if (!silent) {
+          result.textContent = "❌ 錯誤，請看下方比對結果";
+          result.style.color = "red";
+        }
+
+        let output = '';
+        const maxLen = Math.max(userInput.length, correct.length);
+        for (let i = 0; i < maxLen; i++) {
+          const userChar = userInput[i] || '';
+          const correctChar = correct[i] || '';
+          if (userChar === correctChar) {
+            output += `<span class="letter-box" style="color:green">${(userChar || '_').toUpperCase()}</span>`;
+          } else {
+            output += `<span class="letter-box" style="color:red">${(userChar || '_').toUpperCase()}</span>`;
+          }
+        }
+        compareDisplay.innerHTML = output.trim();
+      }
+
+      inputBox.value = '';
+    }
+
+    function speakWord() {
+      if (!currentQuestion) return;
+      currentUtterance = new SpeechSynthesisUtterance(currentQuestion.word);
+      currentUtterance.lang = 'en-US';
+      speechSynthesis.speak(currentUtterance);
+    }
+
+    function repeatAudio() {
+      if (currentUtterance) {
+        speechSynthesis.speak(currentUtterance);
+      } else {
+        speakWord();
+      }
+    }
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        checkAnswer();
+      }
+    });
+
+    nextQuestion();
+  </script>
+
+</body>
+</html>
